@@ -1,6 +1,94 @@
-public struct UniversalHTTP {
-    public private(set) var text = "Hello, World!"
+//
+//  UniversalHTTP.swift
+//  UniversalHTTP
+//
+//  Created by Yonatan Gamburg on 22/05/2022.
+//
 
-    public init() {
+import Foundation
+
+//MARK: - HTTPServiceDelegate
+protocol HTTPServiceDelegate: AnyObject {
+    func errorDidOccur()
+}
+
+//MARK: - UniversalHTTP
+public struct UniversalHTTP<Model : Codable> {
+    
+    public typealias SuccessComplitionHandler = (_ response: Model?) -> Void
+    
+    /**
+     Create and send out a POST request using a path, a url and a delegate to inform about errors.
+     - Parameter delegate: Provided a delegate to inform the view about any errors occuring
+     - Parameter url: The URL provided as a String as to where to send the POST request.
+     - Parameter complition: A complition provided to return the parsed data.
+     */
+    static func post<BodyModel: Codable>(_ delegate: HTTPServiceDelegate? = nil,
+                     url: String,
+                     body: [String : Any]? = nil,
+                     bodyModel: BodyModel? = nil,
+                     httpValueForHeaderField values: [String : String]? = nil,
+                                         _ complition: SuccessComplitionHandler? = nil) {
+        
+        guard let urlComponent = URLComponents(string: url),
+              let usableUrl    = urlComponent.url else {
+            delegate?.errorDidOccur()
+            return
+        }
+        
+        var request        = URLRequest(url: usableUrl)
+        request.httpMethod = "POST"
+        
+        if let body     = body,
+           let bodyData = try? JSONSerialization.data(withJSONObject: body) {
+            request.httpBody   = bodyData
+            
+        } else if let bodyModel = bodyModel,
+                  let bodyData  = try? JSONEncoder().encode(bodyModel) {
+            request.httpBody = bodyData
+        }
+        
+        if let headerValues = values {
+            for value in headerValues {
+                request.addValue(value.value, forHTTPHeaderField: value.key)
+            }
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            if let error = error {
+                print("\n~~> POST request met with an error:\n\(error)")
+                delegate?.errorDidOccur()
+                complition?(nil)
+                
+            } else if let data = data {
+                print("\n~~> [UniversalHTTP] Decoded data as [String: Any]:\n\(String(data: data, encoding: .utf8) ?? "-")\n")
+                
+                guard let model = parseModel(withData: data) else {
+                    delegate?.errorDidOccur()
+                    complition?(nil)
+                    return
+                }
+                
+                complition?(model)
+                
+            } else {
+                complition?(nil)
+            }
+        }.resume()
+    }
+    
+    /**
+     Parse the jsonData according to the provided data model and return the model itself.
+     - Parameter data: The data received as part of the session to be parsed and decoded.
+     */
+    static func parseModel(withData data: Data) -> Model? {
+        do {
+            
+            return try JSONDecoder().decode(Model.self, from: data)
+                
+        } catch {
+            print("\n~~> Error caught: \(error)")
+            return nil
+        }
     }
 }
