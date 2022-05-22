@@ -8,11 +8,11 @@
 import Foundation
 
 //MARK: - HTTPServiceDelegate
-protocol HTTPServiceDelegate: AnyObject {
+public protocol HTTPServiceDelegate: AnyObject {
     func errorDidOccur()
 }
 
-enum HttpMethod { case POST, GET }
+public enum HttpMethod { case POST, GET }
 
 //MARK: - UniversalHTTP
 public struct UniversalHTTP<Model : Codable> {
@@ -25,7 +25,7 @@ public struct UniversalHTTP<Model : Codable> {
      - Parameter url: The URL provided as a String as to where to send the POST request.
      - Parameter complition: A complition provided to return the parsed data.
      */
-    static func performRequest<BodyModel: Codable>(_ delegate: HTTPServiceDelegate? = nil,
+    public static func performRequest<BodyModel: Codable>(_ delegate: HTTPServiceDelegate? = nil,
                                                    url: String,
                                                    body: [String : Any]?  = nil,
                                                    httpMethod: HttpMethod = .GET,
