@@ -17,7 +17,7 @@ public enum HttpMethod { case POST, GET }
 //MARK: - UniversalHTTP
 public struct UniversalHTTP<Model : Codable> {
     
-    public typealias SuccessComplitionHandler = (_ response: Model?) -> Void
+    public typealias SuccessComplitionHandler = (_ response: Model?, _ statusCode: Int?) -> Void
     
     /**
      Create and send out a POST request using a path, a url and a delegate to inform about errors.
@@ -64,29 +64,31 @@ public struct UniversalHTTP<Model : Codable> {
         
         //MARK: Data task
         URLSession.shared.dataTask(with: request) { data, response, error in
-            
+            var responseCode: Int = 0
             if let response = response as? HTTPURLResponse {
                 print("\n~~> [UniversalHTTP] Response came back with code: \(response.statusCode)")
+                responseCode = response.statusCode
+                complition?(nil, responseCode)
             }
             
             if let error = error {
                 print("\n~~> POST request met with an error:\n\(error)")
                 delegate?.errorDidOccur()
-                complition?(nil)
+                complition?(nil, responseCode)
                 
             } else if let data = data {
                 print("\n~~> [UniversalHTTP] Decoded data as [String: Any]:\n\(String(data: data, encoding: .utf8) ?? "-")\n")
                 
                 guard let model = parseModel(withData: data) else {
                     delegate?.errorDidOccur()
-                    complition?(nil)
+                    complition?(nil, responseCode)
                     return
                 }
                 
-                complition?(model)
+                complition?(model, responseCode)
                 
             } else {
-                complition?(nil)
+                complition?(nil, responseCode)
             }
         }.resume()
     }
