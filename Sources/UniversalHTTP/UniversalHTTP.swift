@@ -19,6 +19,7 @@ public struct UniversalHTTP<Model : Codable> {
     
     public typealias SuccessComplitionHandler = (_ response: Model?, _ statusCode: Int?) -> Void
     
+    
     /**
      Create and send out a POST request using a path, a url and a delegate to inform about errors.
      - Parameter delegate: Provided a delegate to inform the view about any errors occuring
@@ -31,6 +32,7 @@ public struct UniversalHTTP<Model : Codable> {
                                                    httpMethod: HttpMethod = .GET,
                                                    bodyModel: BodyModel?  = nil,
                                                    httpValueForHeaderField values: [String : String]? = nil,
+                                                   debugPrintsEnabled: Bool = false,
                                                    _ complition: SuccessComplitionHandler? = nil) {
         
         guard let urlComponent = URLComponents(string: url),
@@ -66,18 +68,29 @@ public struct UniversalHTTP<Model : Codable> {
         URLSession.shared.dataTask(with: request) { data, response, error in
             var responseCode: Int = 0
             if let response = response as? HTTPURLResponse {
-                print("\n~~> [UniversalHTTP] Response came back with code: \(response.statusCode)")
+                
+                if debugPrintsEnabled {
+                    print("\n~~> [UniversalHTTP] Response came back with code: \(response.statusCode)")
+                }
+                
                 responseCode = response.statusCode
                 complition?(nil, responseCode)
             }
             
             if let error = error {
-                print("\n~~> POST request met with an error:\n\(error)")
+                
+                if debugPrintsEnabled {
+                    print("\n~~> POST request met with an error:\n\(error)")
+                }
+                
                 delegate?.errorDidOccur()
                 complition?(nil, responseCode)
                 
             } else if let data = data {
-                print("\n~~> [UniversalHTTP] Decoded data as [String: Any]:\n\(String(data: data, encoding: .utf8) ?? "-")\n")
+                
+                if debugPrintsEnabled {
+                    print("\n~~> [UniversalHTTP] Decoded data as [String: Any]:\n\(String(data: data, encoding: .utf8) ?? "-")\n")
+                }
                 
                 guard let model = parseModel(withData: data) else {
                     delegate?.errorDidOccur()
@@ -101,7 +114,7 @@ public struct UniversalHTTP<Model : Codable> {
         do { return try JSONDecoder().decode(Model.self, from: data) }
         
         catch {
-            print("\n~~> Error caught: \(error)")
+            print("\n~~> Error caught while parsing model: \(error)")
             return nil
         }
     }
