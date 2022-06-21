@@ -74,8 +74,8 @@ public struct UniversalHTTP<Model : Codable> {
                 }
                 
                 responseCode = response.statusCode
-                complition?(nil, responseCode)
-                return
+//                complition?(nil, responseCode)
+//                return
             }
             
             if let error = error {
@@ -85,8 +85,8 @@ public struct UniversalHTTP<Model : Codable> {
                 }
                 
                 delegate?.errorDidOccur()
-                complition?(nil, responseCode)
-                return
+//                complition?(nil, responseCode)
+//                return
                 
             } else if let data = data {
                 
