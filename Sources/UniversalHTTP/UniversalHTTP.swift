@@ -110,6 +110,76 @@ public struct UniversalHTTP<Model : Codable> {
         }.resume()
     }
     
+    
+    
+    
+    @available(iOS 15, *)
+    public static func performRequest<BodyModel: Codable>(_ delegate: HTTPServiceDelegate? = nil,
+                                                   url: String,
+                                                   body: [String : Any]?  = nil,
+                                                   httpMethod: HttpMethod = .GET,
+                                                   bodyModel: BodyModel?  = nil,
+                                                   httpValueForHeaderField values: [String : String]? = nil,
+                                                   debugPrintsEnabled: Bool = false) async -> (response: Model?, statusCode: Int?)? {
+        
+        guard let urlComponent = URLComponents(string: url),
+              let usableUrl    = urlComponent.url else {
+                  delegate?.errorDidOccur()
+                  return nil
+              }
+        
+        var request        = URLRequest(url: usableUrl)
+        request.httpMethod = httpMethod == .POST ? "POST" : "GET"
+        
+        
+        //MARK: Body parameters
+        if let body     = body,
+           let bodyData = try? JSONSerialization.data(withJSONObject: body) {
+            request.httpBody = bodyData
+            
+        } else if let bodyModel = bodyModel,
+                  let bodyData  = try? JSONEncoder().encode(bodyModel) {
+            request.httpBody = bodyData
+        }
+        
+        
+        //MARK: Header values
+        if let headerValues = values {
+            for value in headerValues {
+                request.addValue(value.value, forHTTPHeaderField: value.key)
+            }
+        }
+        
+        
+        //MARK: Data task
+        if let retrievedData = try? await URLSession.shared.data(for: request) {
+            var responseCode: Int = 0
+            
+            if let response = retrievedData.1 as? HTTPURLResponse {
+                if debugPrintsEnabled {
+                    print("\n~~> [UniversalHTTP] Response came back with code: \(response.statusCode)")
+                }
+                
+                responseCode = response.statusCode
+            }
+            
+            if debugPrintsEnabled {
+                print("\n~~> [UniversalHTTP] Decoded data as [String: Any]:\n\(String(data: retrievedData.0, encoding: .utf8) ?? "-")\n")
+            }
+            
+            guard let model = parseModel(withData: retrievedData.0) else {
+                delegate?.errorDidOccur()
+                return (nil, responseCode)
+            }
+            
+            return (model, responseCode)
+            
+        } else {
+            return nil
+        }
+    }
+    
+    
     /**
      Parse the jsonData according to the provided data model and return the model itself.
      - Parameter data: The data received as part of the session to be parsed and decoded.
