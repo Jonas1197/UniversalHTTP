@@ -138,6 +138,7 @@ public struct UniversalHTTP<Model : Codable> {
             request.httpBody = bodyData
             
         } else if let bodyModel = bodyModel,
+                  httpMethod != .GET,
                   let bodyData  = try? JSONEncoder().encode(bodyModel) {
             request.httpBody = bodyData
         }
