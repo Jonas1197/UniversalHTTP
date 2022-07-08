@@ -51,6 +51,7 @@ public struct UniversalHTTP<Model : Codable> {
             request.httpBody = bodyData
             
         } else if let bodyModel = bodyModel,
+                  httpMethod != .GET,
                   let bodyData  = try? JSONEncoder().encode(bodyModel) {
             request.httpBody = bodyData
         }
@@ -74,8 +75,6 @@ public struct UniversalHTTP<Model : Codable> {
                 }
                 
                 responseCode = response.statusCode
-//                complition?(nil, responseCode)
-//                return
             }
             
             if let error = error {
@@ -85,8 +84,6 @@ public struct UniversalHTTP<Model : Codable> {
                 }
                 
                 delegate?.errorDidOccur()
-//                complition?(nil, responseCode)
-//                return
                 
             } else if let data = data {
                 
